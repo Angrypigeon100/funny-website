@@ -3,12 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake Game</title>
-    <link rel="stylesheet" href="styles/style.css">
+    <title>Funny Website - Snake Game, Image Uploader & YouTube Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-repeat: repeat;
+            background-size: 200px 200px; /* Adjust tile size */
+        }
+        #game-container, #image-container, #youtube-container {
+            margin: 20px auto;
+            display: inline-block;
+            border: 2px solid #000;
+            position: relative;
+        }
+        canvas {
+            display: block;
+            background-color: #f0f0f0;
+        }
+        .uploaded-image {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+        iframe {
+            border: none;
+        }
+        .control-buttons {
+            margin-top: 10px;
+        }
+        .control-buttons button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>Snake Game</h1>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <script src="scripts/snake.js"></script>
+    <h1>Funny Website</h1>
+
+    <!-- Snake Game Section -->
+    <h2>Snake Game</h2>
+    <div id="game-container">
+        <canvas id="snakeGame" width="800" height="800"></canvas>
+    </div>
+    <div class="control-buttons">
+        <button onclick="resizeElement('snakeGame', 1.2)">Increase Snake Game Size</button>
+        <button onclick="resizeElement('snakeGame', 0.8)">Decrease Snake Game Size</button>
+    </div>
+
+    <!-- Image Uploader Section -->
+    <h2>Image Uploader</h2>
+    <p>Select an image to upload and display it as part of the snake:</p>
+    <input type="file" id="imageInput" accept="image/*">
+    <div id="image-container"></div>
+    <div class="control-buttons">
+        <button onclick="resizeElement('image-container', 1.2)">Increase Image Uploader Size</button>
+        <button onclick="resizeElement('image-container', 0.8)">Decrease Image Uploader Size</button>
+    </div>
+
+    <!-- YouTube Player Section -->
+    <h2>YouTube Video Player</h2>
+    <p>Enter a YouTube link to play the video:</p>
+    <input type="text" id="youtubeInput" placeholder="Enter YouTube URL">
+    <button id="playVideo">Play Video</button>
+    <div id="youtube-container"></div>
+    <div class="control-buttons">
+        <button onclick="resizeElement('youtube-container', 1.2)">Increase YouTube Player Size</button>
+        <button onclick="resizeElement('youtube-container', 0.8)">Decrease YouTube Player Size</button>
+    </div>
+
+    <script>
+        // Snake Game Logic
+        const canvas = document.getElementById('snakeGame');
+        const ctx = canvas.getContext('2d');
+        const box = 40; // Adjusted box size for smaller grid
+        let snake = [{ x: 9 * box, y: 10 * box }];
+        let direction = null;
+        let food = {
+            x: Math.floor(Math.random() * 20) * box,
+            y: Math.floor(Math.random() * 20) * box
+        };
+        let uploadedImages = []; // Store uploaded images
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+            else if (event.key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+            else if (event.key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
+            else if (event.key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+        });
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw food
+            ctx.fillStyle = 'red';
+            ctx.fillRect(food.x, food.y, box, box);
+
+            // Draw snake
+            for (let i = 0; i < snake.length; i++) {
+                if (uploadedImages[i]) {
+                    const img = uploadedImages[i];
+                    ctx.drawImage(img, snake[i].x, snake[i].y, box, box);
+                } else {
+                    ctx.fillStyle = i === 0 ? 'green' : 'lightgreen';
+                    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                    ctx.strokeStyle = 'darkgreen';
+                    ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+                }
+            }
+
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+
+            if (direction === 'UP') snakeY -= box;
+            if (direction === 'DOWN') snakeY += box;
+            if (direction === 'LEFT') snakeX -= box;
+            if (direction === 'RIGHT') snakeX += box;
+
+            if (snakeX === food.x && snakeY === food.y) {
+                food = {
+                    x: Math.floor(Math.random() * 20) * box,
+                    y: Math.floor(Math.random() * 20) * box
+                };
+            } else {
+                snake.pop();
+                uploadedImages.pop();
+            }
+
+            const newHead = { x: snakeX, y: snakeY };
+
+            if (
+                snakeX < 0 || snakeX >= canvas.width ||
+                snakeY < 0 || snakeY >= canvas.height ||
+                snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
+            ) {
+                alert('Game Over!');
+                snake = [{ x: 9 * box, y: 10 * box }];
+                direction = null;
+                food = {
+                    x: Math.floor(Math.random() * 20) * box,
+                    y: Math.floor(Math.random() * 20) * box
+                };
+                uploadedImages = [];
+                return;
+            }
+
+            snake.unshift(newHead);
+        }
+
+        setInterval(drawGame, 100);
+
+        // Image Uploader Logic
+        const imageInput = document.getElementById('imageInput');
+        const imageContainer = document.getElementById('image-container');
+
+        imageInput.addEventListener('change', (event) => {
+            const files = event.target.files;
+
+            for (const file of files) {
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        uploadedImages.push(img);
+                    };
+
+                    // Set the most recently uploaded image as the background
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+
+                    const imgElement = document.createElement('img');
+                    imgElement.src = e.target.result;
+                    imgElement.alt = 'Uploaded Image';
+                    imgElement.className = 'uploaded-image';
+                    imageContainer.appendChild(imgElement);
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // YouTube Player Logic
+        const youtubeInput = document.getElementById('youtubeInput');
+        const playVideoButton = document.getElementById('playVideo');
+        const youtubeContainer = document.getElementById('youtube-container');
+
+        playVideoButton.addEventListener('click', () => {
+            const url = youtubeInput.value;
+            const videoId = extractYouTubeVideoId(url);
+
+            if (videoId) {
+                youtubeContainer.innerHTML = `
+                    <iframe 
+                        src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                        allow="autoplay; encrypted-media" 
+                        allowfullscreen>
+                    </iframe>
+                `;
+            } else {
+                alert('Please enter a valid YouTube URL.');
+            }
+        });
+
+        function extractYouTubeVideoId(url) {
+            const regex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)|youtu\.be\/([^?&]+)/;
+            const match = url.match(regex);
+            return match ? match[1] || match[2] : null;
+        }
+
+        // Resize Elements
+        function resizeElement(elementId, scale) {
+            const element = document.getElementById(elementId);
+            const currentWidth = element.offsetWidth;
+            const currentHeight = element.offsetHeight;
+            element.style.width = `${currentWidth * scale}px`;
+            element.style.height = `${currentHeight * scale}px`;
+        }
+    </script>
 </body>
 </html>
